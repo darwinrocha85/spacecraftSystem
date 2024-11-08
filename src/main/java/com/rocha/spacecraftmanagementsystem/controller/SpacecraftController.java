@@ -1,8 +1,9 @@
 package com.rocha.spacecraftmanagementsystem.controller;
 
 import com.rocha.spacecraftmanagementsystem.model.Spacecraft;
-import com.rocha.spacecraftmanagementsystem.repository.SpacecraftRepository;
+import com.rocha.spacecraftmanagementsystem.service.SpacecraftService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -19,12 +20,12 @@ import java.util.Optional;
 public class SpacecraftController {
 
     @Autowired
-    private SpacecraftRepository spacecraftRepository;
+    private SpacecraftService spacecraftService;
 
     // Obtener todas las naves espaciales
     @GetMapping
     public List<Spacecraft> getAllSpacecrafts() {
-        return spacecraftRepository.findAll();
+        return spacecraftService.getAllSpacecrafts();
     }
 
     // Obtener todas las naves espaciales con paginación
@@ -35,58 +36,36 @@ public class SpacecraftController {
             @RequestParam(defaultValue = "id") String sortBy,
             @RequestParam(defaultValue = "asc") String sortDirection
     ) {
-        Sort sort = sortDirection.equalsIgnoreCase(Sort.Direction.ASC.name())
-                ? Sort.by(sortBy).ascending()
-                : Sort.by(sortBy).descending();
 
-        Pageable pageable = PageRequest.of(page, size, sort);
-        return spacecraftRepository.findAll(pageable);
+        return spacecraftService.findAllPage(page, size, sortBy, sortDirection);
     }
 
     // Obtener una nave espacial por ID
+    @Cacheable(value = "spacecrafts", key = "#id")
     @GetMapping("/{id}")
     public ResponseEntity<Spacecraft> getSpacecraftById(@PathVariable Long id) {
-        Optional<Spacecraft> spacecraft = spacecraftRepository.findById(id);
-        return spacecraft.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
+        return spacecraftService.getSpacecraftById(id);
     }
 
     // Crear una nueva nave espacial
     @PostMapping
     public ResponseEntity<Spacecraft> createSpacecraft(@RequestBody Spacecraft spacecraft) {
-        Spacecraft savedSpacecraft = spacecraftRepository.save(spacecraft);
-        return new ResponseEntity<>(savedSpacecraft, HttpStatus.CREATED);
+
+        return spacecraftService.createSpacecraft(spacecraft);
+
     }
 
     // Actualizar una nave espacial existente
     @PutMapping("/{id}")
     public ResponseEntity<Spacecraft> updateSpacecraft(@PathVariable Long id, @RequestBody Spacecraft spacecraftDetails) {
-        Optional<Spacecraft> optionalSpacecraft = spacecraftRepository.findById(id);
+        return spacecraftService.updateSpacecraft(id, spacecraftDetails);
 
-        if (optionalSpacecraft.isPresent()) {
-            Spacecraft spacecraft = optionalSpacecraft.get();
-            spacecraft.setName(spacecraftDetails.getName());
-            spacecraft.setFranchise(spacecraftDetails.getFranchise());
-            spacecraft.setCrewCapacity(spacecraftDetails.getCrewCapacity());
-            spacecraft.setSpeed(spacecraftDetails.getSpeed());
-            spacecraft.setSpacecraftType(spacecraftDetails.getSpacecraftType());
-
-
-            Spacecraft updatedSpacecraft = spacecraftRepository.save(spacecraft);
-            return ResponseEntity.ok(updatedSpacecraft);
-        } else {
-            return ResponseEntity.notFound().build();
-        }
     }
 
     // Eliminar una nave espacial por ID
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteSpacecraft(@PathVariable Long id) {
-        if (spacecraftRepository.existsById(id)) {
-            spacecraftRepository.deleteById(id);
-            return ResponseEntity.noContent().build();
-        } else {
-            return ResponseEntity.notFound().build();
-        }
+       return spacecraftService.deleteSpacecraft(id);
     }
 
     // Obtener todas las naves espaciales que contienen un texto en su nombre con paginación
@@ -98,11 +77,6 @@ public class SpacecraftController {
             @RequestParam(defaultValue = "id") String sortBy,
             @RequestParam(defaultValue = "asc") String sortDirection
     ) {
-        Sort sort = sortDirection.equalsIgnoreCase(Sort.Direction.ASC.name())
-                ? Sort.by(sortBy).ascending()
-                : Sort.by(sortBy).descending();
-
-        Pageable pageable = PageRequest.of(page, size, sort);
-        return spacecraftRepository.findByNameContainingIgnoreCase(name, pageable);
+        return spacecraftService.searchSpacecraftsByName(name, page, size, sortBy, sortDirection);
     }
 }

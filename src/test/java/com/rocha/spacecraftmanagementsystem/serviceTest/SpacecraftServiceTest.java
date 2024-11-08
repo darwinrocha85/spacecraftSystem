@@ -2,6 +2,7 @@ package com.rocha.spacecraftmanagementsystem.serviceTest;
 
 import com.rocha.spacecraftmanagementsystem.model.Spacecraft;
 import com.rocha.spacecraftmanagementsystem.repository.SpacecraftRepository;
+import com.rocha.spacecraftmanagementsystem.service.SpacecraftService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -32,7 +33,7 @@ class SpacecraftServiceTest {
         when(spacecraftRepository.findById(spacecraftId)).thenReturn(Optional.of(mockSpacecraft));
 
         // Act: llamar al método que estamos probando
-        Spacecraft result = spacecraftService.getSpacecraftById(spacecraftId);
+        Spacecraft result = spacecraftService.getSpacecraftById2(spacecraftId);
 
         // Assert: verificar que el resultado sea el esperado
         assertNotNull(result);
@@ -49,7 +50,7 @@ class SpacecraftServiceTest {
 
         // Act & Assert: verificar que se lanza la excepción esperada
         Exception exception = assertThrows(RuntimeException.class, () -> {
-            spacecraftService.getSpacecraftById(spacecraftId);
+            spacecraftService.getSpacecraftById2(spacecraftId);
         });
 
         assertEquals("Spacecraft not found with ID: " + spacecraftId, exception.getMessage());

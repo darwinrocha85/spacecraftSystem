@@ -13,4 +13,4 @@ la petición. Por ejemplo, si enviamos “wing” devolverá “x-wing”.
 • Desarrollar un @Aspect que añada una línea de log cuando nos piden una nave con un id
 negativo.
 • Gestión centralizada de excepciones.
-• Utilizar cachés de algún tipo.
+• Utilizar cachés: caffeine.
