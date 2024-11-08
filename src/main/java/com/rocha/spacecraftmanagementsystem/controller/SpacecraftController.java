@@ -69,7 +69,7 @@ public class SpacecraftController {
             spacecraft.setCrewCapacity(spacecraftDetails.getCrewCapacity());
             spacecraft.setSpeed(spacecraftDetails.getSpeed());
             spacecraft.setSpacecraftType(spacecraftDetails.getSpacecraftType());
-            spacecraft.setIsArmed(spacecraftDetails.getIsArmed());
+
 
             Spacecraft updatedSpacecraft = spacecraftRepository.save(spacecraft);
             return ResponseEntity.ok(updatedSpacecraft);
