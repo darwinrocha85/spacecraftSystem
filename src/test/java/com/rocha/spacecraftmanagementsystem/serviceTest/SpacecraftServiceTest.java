@@ -49,9 +49,7 @@ class SpacecraftServiceTest {
         when(spacecraftRepository.findById(spacecraftId)).thenReturn(Optional.empty());
 
         // Act & Assert: verificar que se lanza la excepción esperada
-        Exception exception = assertThrows(RuntimeException.class, () -> {
-            spacecraftService.getSpacecraftById2(spacecraftId);
-        });
+        Exception exception = assertThrows(RuntimeException.class, () -> spacecraftService.getSpacecraftById2(spacecraftId));
 
         assertEquals("Spacecraft not found with ID: " + spacecraftId, exception.getMessage());
         verify(spacecraftRepository, times(1)).findById(spacecraftId);
