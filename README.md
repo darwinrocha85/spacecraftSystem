@@ -1,6 +1,6 @@
 # Proyecto Spacecraft
 
-Este proyecto es una API REST para gestionar naves espaciales. La aplicación está construida utilizando **Spring Boot 3** y está diseñada para interactuar con una base de datos **H2** en memoria. También implementa **caché en memoria** con **Caffeine** para optimizar las consultas.
+Este proyecto es una API REST para gestionar naves espaciales. La aplicación está construida utilizando **Spring Boot 3** y está diseñada para interactuar con una base de datos **H2** en memoria. También implementa **caché en memoria** con **Caffeine** para optimizar las consultas. Gestión centralizada de excepciones y un ejemplo con el decorador "@Aspect"
 
 ## Tecnologías Utilizadas
 
