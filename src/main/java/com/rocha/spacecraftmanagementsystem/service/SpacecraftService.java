@@ -13,6 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.*;
+import com.rocha.spacecraftmanagementsystem.exception.SpacecraftNotFoundException;
 
 import java.util.List;
 import java.util.Optional;
@@ -47,13 +48,14 @@ public class SpacecraftService {
     // Obtener una nave espacial por ID
     @Cacheable(value = "spacecrafts", key = "#id")
     public ResponseEntity<Spacecraft> getSpacecraftById(Long id) {
-        Optional<Spacecraft> spacecraft = spacecraftRepository.findById(id);
-        return spacecraft.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
+        Spacecraft spacecraft = spacecraftRepository.findById(id)
+                .orElseThrow(() -> new SpacecraftNotFoundException("Spacecraft with ID " + id + " not found"));
+        return ResponseEntity.ok(spacecraft);
     }
 
     public Spacecraft getSpacecraftById2(Long id) {
         return spacecraftRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Spacecraft not found with ID: " + id));
+                .orElseThrow(() -> new SpacecraftNotFoundException("Spacecraft with ID " + id + " not found"));
     }
 
 
