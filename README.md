@@ -14,3 +14,9 @@ la petición. Por ejemplo, si enviamos “wing” devolverá “x-wing”.
 negativo.
 • Gestión centralizada de excepciones.
 • Utilizar cachés: caffeine.
+
+FRAMEWORK: SPRING BOOT
+LENGUAJE JAVA
+BBDD: H2
+CACHE: caffeine
+
