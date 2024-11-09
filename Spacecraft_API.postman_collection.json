@@ -1,0 +1,125 @@
+{
+  "info": {
+    "name": "Spacecraft API",
+    "description": "Colección para probar todos los endpoints de la API de Spacecraft",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Obtener todas las naves espaciales",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}",
+          "host": ["{{baseUrl}}"]
+        }
+      }
+    },
+    {
+      "name": "Obtener todas las naves espaciales con paginación",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/page?page={{page}}&size={{size}}&sortBy={{sortBy}}&sortDirection={{sortDirection}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["page"],
+          "query": [
+            {"key": "page", "value": "{{page}}"},
+            {"key": "size", "value": "{{size}}"},
+            {"key": "sortBy", "value": "{{sortBy}}"},
+            {"key": "sortDirection", "value": "{{sortDirection}}"}
+          ]
+        }
+      }
+    },
+    {
+      "name": "Obtener una nave espacial por ID",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/{{id}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["{{id}}"]
+        }
+      }
+    },
+    {
+      "name": "Crear una nueva nave espacial",
+      "request": {
+        "method": "POST",
+        "header": [
+          {"key": "Content-Type", "value": "application/json"}
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"USS Enterprise\",\n  \"franchise\": \"Star Trek\",\n  \"crewCapacity\": 430,\n  \"speed\": 9.6,\n  \"spacecraftType\": \"Exploration\",\n  \"isArmed\": true\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}",
+          "host": ["{{baseUrl}}"]
+        }
+      }
+    },
+    {
+      "name": "Actualizar una nave espacial existente",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {"key": "Content-Type", "value": "application/json"}
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"USS Voyager\",\n  \"franchise\": \"Star Trek\",\n  \"crewCapacity\": 150,\n  \"speed\": 9.975,\n  \"spacecraftType\": \"Exploration\",\n  \"isArmed\": false\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/{{id}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["{{id}}"]
+        }
+      }
+    },
+    {
+      "name": "Eliminar una nave espacial por ID",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/{{id}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["{{id}}"]
+        }
+      }
+    },
+    {
+      "name": "Buscar naves espaciales por nombre",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/search?name={{name}}&page={{page}}&size={{size}}&sortBy={{sortBy}}&sortDirection={{sortDirection}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["search"],
+          "query": [
+            {"key": "name", "value": "{{name}}"},
+            {"key": "page", "value": "{{page}}"},
+            {"key": "size", "value": "{{size}}"},
+            {"key": "sortBy", "value": "{{sortBy}}"},
+            {"key": "sortDirection", "value": "{{sortDirection}}"}
+          ]
+        }
+      }
+    }
+  ],
+  "variable": [
+    {"key": "baseUrl", "value": "http://localhost:8080/api/spacecrafts"},
+    {"key": "id", "value": "1"},
+    {"key": "name", "value": "wing"},
+    {"key": "page", "value": "0"},
+    {"key": "size", "value": "10"},
+    {"key": "sortBy", "value": "id"},
+    {"key": "sortDirection", "value": "asc"}
+  ]
+}
