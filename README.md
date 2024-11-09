@@ -59,16 +59,6 @@ Una colección Postman está disponible para probar cada uno de los endpoints co
 2. Ejecuta la aplicación con `./mvnw spring-boot:run` (Linux/macOS) o `mvnw.cmd spring-boot:run` (Windows).
 3. Accede a `http://localhost:8080` en tu navegador o desde Postman para realizar pruebas con la API.
 
-## Contribuir
-
-Para contribuir a este proyecto, por favor sigue estos pasos:
-
-1. Haz un fork del repositorio.
-2. Crea una nueva rama (`git checkout -b feature-nueva-funcionalidad`).
-3. Realiza tus cambios y haz un commit (`git commit -am 'Añadir nueva funcionalidad'`).
-4. Haz push a la rama (`git push origin feature-nueva-funcionalidad`).
-5. Crea un nuevo Pull Request.
-
 ## Licencia
 
 Este proyecto está bajo la Licencia MIT. Consulta el archivo `LICENSE` para obtener más detalles.
