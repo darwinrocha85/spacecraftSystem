@@ -14,7 +14,7 @@ import java.util.List;
 @Service
 public class MuseumScheduleService {
 
-    private static final int WINDOW_DAYS = 7; // hoy inclusive + 6 dias mas
+    private static final int WINDOW_DAYS = 8; // hoy inclusive + 7 dias mas
 
     @Autowired
     private MuseumScheduleRepository museumScheduleRepository;
