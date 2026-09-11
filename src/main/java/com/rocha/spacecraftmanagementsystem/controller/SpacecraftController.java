@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/spacecrafts")
@@ -23,7 +24,7 @@ public class SpacecraftController {
         return spacecraftService.getAllSpacecrafts();
     }
 
-    // Obtener todas las naves espaciales con paginación
+    // Obtener todas las naves espaciales con paginacion
     @GetMapping("/page")
     public Page<Spacecraft> getAllSpacecrafts(
             @RequestParam(defaultValue = "0") int page,
@@ -35,6 +36,12 @@ public class SpacecraftController {
         return spacecraftService.findAllPage(page, size, sortBy, sortDirection);
     }
 
+    // Naves habilitadas como museo y/o teatro (las usara la app de entradas)
+    @GetMapping("/venues")
+    public List<Spacecraft> getVenues(@RequestParam(required = false) String type) {
+        return spacecraftService.getVenues(type);
+    }
+
     // Obtener una nave espacial por ID
     @Cacheable(value = "spacecrafts", key = "#id")
     @GetMapping("/{id}")
@@ -44,17 +51,22 @@ public class SpacecraftController {
 
     // Crear una nueva nave espacial
     @PostMapping
-    public ResponseEntity<Spacecraft> createSpacecraft(@RequestBody Spacecraft spacecraft) {
-
-        return spacecraftService.createSpacecraft(spacecraft);
-
+    public ResponseEntity<?> createSpacecraft(@RequestBody Spacecraft spacecraft) {
+        try {
+            return spacecraftService.createSpacecraft(spacecraft);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
     }
 
     // Actualizar una nave espacial existente
     @PutMapping("/{id}")
-    public ResponseEntity<Spacecraft> updateSpacecraft(@PathVariable Long id, @RequestBody Spacecraft spacecraftDetails) {
-        return spacecraftService.updateSpacecraft(id, spacecraftDetails);
-
+    public ResponseEntity<?> updateSpacecraft(@PathVariable Long id, @RequestBody Spacecraft spacecraftDetails) {
+        try {
+            return spacecraftService.updateSpacecraft(id, spacecraftDetails);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
     }
 
     // Eliminar una nave espacial por ID
@@ -63,7 +75,7 @@ public class SpacecraftController {
        return spacecraftService.deleteSpacecraft(id);
     }
 
-    // Obtener todas las naves espaciales que contienen un texto en su nombre con paginación
+    // Obtener todas las naves espaciales que contienen un texto en su nombre con paginacion
     @GetMapping("/search")
     public Page<Spacecraft> searchSpacecraftsByName(
             @RequestParam String name,

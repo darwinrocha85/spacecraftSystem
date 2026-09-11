@@ -60,6 +60,7 @@ public class SpacecraftService {
 
 
     public ResponseEntity<Spacecraft> createSpacecraft(@RequestBody Spacecraft spacecraft) {
+        validateVenueFields(spacecraft);
         Spacecraft savedSpacecraft = spacecraftRepository.save(spacecraft);
         return new ResponseEntity<>(savedSpacecraft, HttpStatus.CREATED);
     }
@@ -76,7 +77,11 @@ public class SpacecraftService {
             spacecraft.setSpeed(spacecraftDetails.getSpeed());
             spacecraft.setSpacecraftType(spacecraftDetails.getSpacecraftType());
             spacecraft.setIsArmed(spacecraftDetails.getIsArmed());
+            spacecraft.setIsMuseum(spacecraftDetails.getIsMuseum());
+            spacecraft.setIsTheater(spacecraftDetails.getIsTheater());
+            spacecraft.setMuseumCapacity(spacecraftDetails.getMuseumCapacity());
 
+            validateVenueFields(spacecraft);
 
             Spacecraft updatedSpacecraft = spacecraftRepository.save(spacecraft);
             return ResponseEntity.ok(updatedSpacecraft);
@@ -110,5 +115,22 @@ public class SpacecraftService {
         Pageable pageable = PageRequest.of(page, size, sort);
         return spacecraftRepository.findByNameContainingIgnoreCase(name, pageable);
     }
-}
 
+    // Naves habilitadas como recinto (museo y/o teatro) - las usa la app de entradas (Fase 2)
+    public List<Spacecraft> getVenues(String type) {
+        if ("museum".equalsIgnoreCase(type)) {
+            return spacecraftRepository.findByIsMuseumTrue();
+        } else if ("theater".equalsIgnoreCase(type)) {
+            return spacecraftRepository.findByIsTheaterTrue();
+        }
+        return spacecraftRepository.findByIsMuseumTrueOrIsTheaterTrue();
+    }
+
+    // Si la nave es museo, la capacidad es obligatoria y debe ser positiva
+    private void validateVenueFields(Spacecraft spacecraft) {
+        boolean isMuseum = Boolean.TRUE.equals(spacecraft.getIsMuseum());
+        if (isMuseum && (spacecraft.getMuseumCapacity() == null || spacecraft.getMuseumCapacity() <= 0)) {
+            throw new IllegalArgumentException("museumCapacity is required and must be greater than 0 when isMuseum is true");
+        }
+    }
+}
