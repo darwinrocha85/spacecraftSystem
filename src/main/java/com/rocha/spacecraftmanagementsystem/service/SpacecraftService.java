@@ -75,6 +75,7 @@ public class SpacecraftService {
             spacecraft.setCrewCapacity(spacecraftDetails.getCrewCapacity());
             spacecraft.setSpeed(spacecraftDetails.getSpeed());
             spacecraft.setSpacecraftType(spacecraftDetails.getSpacecraftType());
+            spacecraft.setIsArmed(spacecraftDetails.getIsArmed());
 
 
             Spacecraft updatedSpacecraft = spacecraftRepository.save(spacecraft);
@@ -110,3 +111,4 @@ public class SpacecraftService {
         return spacecraftRepository.findByNameContainingIgnoreCase(name, pageable);
     }
 }
+
