@@ -1,8 +1,8 @@
-INSERT INTO spacecrafts (name, franchise, crew_capacity, speed, spacecraft_type, is_armed) VALUES
-('USS Enterprise', 'Star Trek', 430, 9.6, 'Exploration', true),
-('Millennium Falcon', 'Star Wars', 6, 1050, 'Freighter', true),
-('Galactica', 'Battlestar Galactica', 2500, 8.0, 'Battlestar', true),
-('Serenity', 'Firefly', 5, 1.5, 'Transport', false);
+INSERT INTO spacecrafts (name, franchise, crew_capacity, speed, spacecraft_type, is_armed, status) VALUES
+('USS Enterprise', 'Star Trek', 430, 9.6, 'Exploration', true, 'OPERATIVA'),
+('Millennium Falcon', 'Star Wars', 6, 1050, 'Freighter', true, 'OPERATIVA'),
+('Galactica', 'Battlestar Galactica', 2500, 8.0, 'Battlestar', true, 'OPERATIVA'),
+('Serenity', 'Firefly', 5, 1.5, 'Transport', false, 'OPERATIVA');
 
 -- Demo simplificada a proposito: 4 naves, una por cada combinacion posible de recinto,
 -- para no depender de cual nave se pruebe -> todas tienen datos de sobra.

@@ -1,6 +1,8 @@
 package com.rocha.spacecraftmanagementsystem.model;
 
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -47,4 +49,9 @@ public class Spacecraft {
 
     @Column(name = "museum_capacity") // Maximo de personas dentro del museo al mismo tiempo (obligatorio si isMuseum = true)
     private Integer museumCapacity;
+
+    // Fase 3: estado operativo / taller de reparacion. Default OPERATIVA para naves nuevas.
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", length = 30)
+    private SpacecraftStatus status = SpacecraftStatus.OPERATIVA;
 }

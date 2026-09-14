@@ -1,12 +1,14 @@
 package com.rocha.spacecraftmanagementsystem.repository;
 
 import com.rocha.spacecraftmanagementsystem.model.MuseumTicket;
+import com.rocha.spacecraftmanagementsystem.model.TicketStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.List;
 import java.util.Optional;
 
 public interface MuseumTicketRepository extends JpaRepository<MuseumTicket, Long> {
@@ -20,4 +22,8 @@ public interface MuseumTicketRepository extends JpaRepository<MuseumTicket, Long
     Integer sumActiveQuantity(@Param("spacecraftId") Long spacecraftId,
                               @Param("visitDate") LocalDate visitDate,
                               @Param("visitTime") LocalTime visitTime);
+
+    // Fase 3: entradas activas de una nave (sin importar fecha/hora) - se usa al enviarla al
+    // taller, para cancelarlas y contar el impacto antes de confirmar.
+    List<MuseumTicket> findBySpacecraftIdAndStatus(Long spacecraftId, TicketStatus status);
 }

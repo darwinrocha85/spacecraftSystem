@@ -17,10 +17,13 @@ public class CorsConfig {
                         .allowedOrigins(
                                 "http://localhost:5173",
                                 "http://localhost:5174",
+                                "http://localhost:5175",
                                 "https://spacecraft-system.web.app",
                                 "https://spacecraft-system.firebaseapp.com",
                                 "https://spacecraft-tickets.web.app",
-                                "https://spacecraft-tickets.firebaseapp.com"
+                                "https://spacecraft-tickets.firebaseapp.com",
+                                "https://spacecraft-taller.web.app",
+                                "https://spacecraft-taller.firebaseapp.com"
                         )
                         .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
                         .allowedHeaders("*");

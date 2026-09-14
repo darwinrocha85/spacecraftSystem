@@ -3,6 +3,7 @@ package com.rocha.spacecraftmanagementsystem.service;
 import com.rocha.spacecraftmanagementsystem.exception.SpacecraftNotFoundException;
 import com.rocha.spacecraftmanagementsystem.model.MuseumSchedule;
 import com.rocha.spacecraftmanagementsystem.model.Spacecraft;
+import com.rocha.spacecraftmanagementsystem.model.SpacecraftStatus;
 import com.rocha.spacecraftmanagementsystem.repository.MuseumScheduleRepository;
 import com.rocha.spacecraftmanagementsystem.repository.SpacecraftRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,6 +30,13 @@ public class MuseumScheduleService {
 
         if (!Boolean.TRUE.equals(spacecraft.getIsMuseum())) {
             throw new IllegalArgumentException("Spacecraft " + spacecraft.getId() + " is not a museum");
+        }
+
+        // Fase 3: una nave en el taller no puede abrir nuevos horarios de museo
+        if (spacecraft.getStatus() != null && spacecraft.getStatus() != SpacecraftStatus.OPERATIVA) {
+            throw new IllegalArgumentException(
+                    "Spacecraft " + spacecraft.getId() + " is en reparacion (" + spacecraft.getStatus()
+                            + ") and cannot have new museum schedules");
         }
 
         LocalDate today = LocalDate.now();

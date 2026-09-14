@@ -3,6 +3,7 @@ package com.rocha.spacecraftmanagementsystem.service;
 import com.rocha.spacecraftmanagementsystem.exception.ResourceNotFoundException;
 import com.rocha.spacecraftmanagementsystem.exception.SpacecraftNotFoundException;
 import com.rocha.spacecraftmanagementsystem.model.Spacecraft;
+import com.rocha.spacecraftmanagementsystem.model.SpacecraftStatus;
 import com.rocha.spacecraftmanagementsystem.model.TheaterEvent;
 import com.rocha.spacecraftmanagementsystem.model.TheaterTicket;
 import com.rocha.spacecraftmanagementsystem.model.TicketStatus;
@@ -41,6 +42,13 @@ public class TheaterEventService {
 
         if (!Boolean.TRUE.equals(spacecraft.getIsTheater())) {
             throw new IllegalArgumentException("Spacecraft " + spacecraft.getId() + " is not a theater");
+        }
+
+        // Fase 3: una nave en el taller no puede abrir nuevas funciones de teatro
+        if (spacecraft.getStatus() != null && spacecraft.getStatus() != SpacecraftStatus.OPERATIVA) {
+            throw new IllegalArgumentException(
+                    "Spacecraft " + spacecraft.getId() + " is en reparacion (" + spacecraft.getStatus()
+                            + ") and cannot have new theater events");
         }
 
         if (event.getStartDate() == null || event.getEndDate() == null || event.getEndDate().isBefore(event.getStartDate())) {
