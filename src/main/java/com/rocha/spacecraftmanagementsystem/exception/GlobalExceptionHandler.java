@@ -32,7 +32,7 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
-    // Manejo de excepciones específicas personalizadas
+    // Manejo de excepciones especÃ­ficas personalizadas
     @ExceptionHandler(SpacecraftNotFoundException.class)
     public ResponseEntity<Object> handleSpacecraftNotFoundException(SpacecraftNotFoundException ex, WebRequest request) {
         Map<String, Object> body = new HashMap<>();
@@ -41,5 +41,14 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(body, HttpStatus.NOT_FOUND);
     }
 
-    // Agrega otros métodos @ExceptionHandler para manejar excepciones específicas según sea necesario
+    // Fase 2: tickets/eventos no encontrados (busqueda por ID o por codigo de confirmacion)
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<Object> handleResourceNotFoundException(ResourceNotFoundException ex, WebRequest request) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("timestamp", LocalDateTime.now());
+        body.put("message", ex.getMessage());
+        return new ResponseEntity<>(body, HttpStatus.NOT_FOUND);
+    }
+
+    // Agrega otros mÃ©todos @ExceptionHandler para manejar excepciones especÃ­ficas segÃºn sea necesario
 }

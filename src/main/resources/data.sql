@@ -1,77 +1,69 @@
 INSERT INTO spacecrafts (name, franchise, crew_capacity, speed, spacecraft_type, is_armed) VALUES
 ('USS Enterprise', 'Star Trek', 430, 9.6, 'Exploration', true),
 ('Millennium Falcon', 'Star Wars', 6, 1050, 'Freighter', true),
-('X-Wing', 'Star Wars', 1, 1050, 'Starfighter', true),
-('Y-Wing', 'Star Wars', 2, 950, 'Starfighter', true),
 ('Galactica', 'Battlestar Galactica', 2500, 8.0, 'Battlestar', true),
-('Serenity', 'Firefly', 5, 1.5, 'Transport', false),
-('Nebuchadnezzar', 'The Matrix', 7, 2.0, 'Hovercraft', false),
-('Rocinante', 'The Expanse', 50, 20.0, 'Gunship', true),
-('Eagle 5', 'Spaceballs', 2, 0.5, 'Space RV', false),
-('Heart of Gold', 'Hitchhikers Guide', 3, 42.0, 'Research', false),
-('Discovery One', '2001: A Space Odyssey', 6, 1.0, 'Exploration', false),
-('Event Horizon', 'Event Horizon', 20, 50.0, 'Research', true),
-('Slave I', 'Star Wars', 1, 1000, 'Fighter', true),
-('Red Dwarf', 'Red Dwarf', 169, 1.0, 'Mining Ship', false),
-('Normandy SR-2', 'Mass Effect', 60, 15.0, 'Stealth', true),
-('Elysium', 'Elysium', 100, 12.0, 'Space Habitat', false),
-('Vipers', 'Battlestar Galactica', 1, 15.0, 'Fighter', true),
-('Sulaco', 'Aliens', 85, 8.0, 'Warship', true),
-('Planet Express Ship', 'Futurama', 4, 25.0, 'Delivery', true),
-('Swordfish II', 'Cowboy Bebop', 1, 13.0, 'Fighter', true);
+('Serenity', 'Firefly', 5, 1.5, 'Transport', false);
 
--- Fase 1: poblar la flota (20 naves) en 4 grupos de 5 (25% cada uno) para que la demo
--- se vea repartida de forma pareja entre los estados posibles:
---   * museo + teatro : 1 (Enterprise), 5 (Galactica), 11 (Discovery One), 14 (Red Dwarf), 16 (Elysium)
---   * solo museo     : 3 (X-Wing), 9 (Eagle 5), 12 (Event Horizon), 18 (Sulaco), 19 (Planet Express Ship)
---   * solo teatro    : 2 (Millennium Falcon), 6 (Serenity), 10 (Heart of Gold), 15 (Normandy SR-2), 20 (Swordfish II)
---   * sin asignar    : 4 (Y-Wing), 7 (Nebuchadnezzar), 8 (Rocinante), 13 (Slave I), 17 (Vipers)  -> quedan is_museum/is_theater = null
+-- Demo simplificada a proposito: 4 naves, una por cada combinacion posible de recinto,
+-- para no depender de cual nave se pruebe -> todas tienen datos de sobra.
+--   1: USS Enterprise    -> solo museo
+--   2: Millennium Falcon -> solo teatro
+--   3: Galactica         -> museo + teatro
+--   4: Serenity          -> ninguno (nave "normal", sin recinto)
+UPDATE spacecrafts SET is_museum = true, museum_capacity = 150 WHERE id = 1;
+UPDATE spacecrafts SET is_theater = true WHERE id = 2;
+UPDATE spacecrafts SET is_museum = true, is_theater = true, museum_capacity = 300 WHERE id = 3;
+-- id 4 (Serenity) se deja sin recinto: is_museum / is_theater quedan null
 
--- Museo + Teatro (25%)
-UPDATE spacecrafts SET is_museum = true, is_theater = true, museum_capacity = 150 WHERE id = 1;  -- USS Enterprise
-UPDATE spacecrafts SET is_museum = true, is_theater = true, museum_capacity = 300 WHERE id = 5;  -- Galactica
-UPDATE spacecrafts SET is_museum = true, is_theater = true, museum_capacity = 80  WHERE id = 11; -- Discovery One
-UPDATE spacecrafts SET is_museum = true, is_theater = true, museum_capacity = 120 WHERE id = 14; -- Red Dwarf
-UPDATE spacecrafts SET is_museum = true, is_theater = true, museum_capacity = 500 WHERE id = 16; -- Elysium
-
--- Solo museo (25%)
-UPDATE spacecrafts SET is_museum = true, museum_capacity = 20  WHERE id = 3;  -- X-Wing
-UPDATE spacecrafts SET is_museum = true, museum_capacity = 30  WHERE id = 9;  -- Eagle 5
-UPDATE spacecrafts SET is_museum = true, museum_capacity = 60  WHERE id = 12; -- Event Horizon
-UPDATE spacecrafts SET is_museum = true, museum_capacity = 200 WHERE id = 18; -- Sulaco
-UPDATE spacecrafts SET is_museum = true, museum_capacity = 40  WHERE id = 19; -- Planet Express Ship
-
--- Solo teatro (25%)
-UPDATE spacecrafts SET is_theater = true WHERE id = 2;  -- Millennium Falcon
-UPDATE spacecrafts SET is_theater = true WHERE id = 6;  -- Serenity
-UPDATE spacecrafts SET is_theater = true WHERE id = 10; -- Heart of Gold
-UPDATE spacecrafts SET is_theater = true WHERE id = 15; -- Normandy SR-2
-UPDATE spacecrafts SET is_theater = true WHERE id = 20; -- Swordfish II
-
--- Sin asignar (25%): ids 4, 7, 8, 13, 17 se quedan como vinieron del INSERT (is_museum/is_theater = null)
-
--- Horarios de museo: una nave puede ser museo por el grupo "museo+teatro" o "solo museo".
--- Se generan con fechas relativas (CURRENT_DATE) para que siempre caigan dentro de la
--- ventana movil de 8 dias (hoy + 7) validada en MuseumScheduleService, sin importar
--- cuando Render reinicie la instancia.
+-- Horarios de museo (naves 1 y 3): los 8 dias completos de la ventana movil (hoy + 7),
+-- para que la nave este abierta sin importar que dia de esa ventana se pruebe.
 INSERT INTO museum_schedules (spacecraft_id, schedule_date, open_time, close_time) VALUES
 (1, CURRENT_DATE, '09:00:00', '18:00:00'),
 (1, DATEADD('DAY', 1, CURRENT_DATE), '09:00:00', '18:00:00'),
-(5, CURRENT_DATE, '10:00:00', '19:00:00'),
-(5, DATEADD('DAY', 1, CURRENT_DATE), '10:00:00', '19:00:00'),
-(11, CURRENT_DATE, '08:30:00', '17:00:00'),
-(11, DATEADD('DAY', 1, CURRENT_DATE), '08:30:00', '17:00:00'),
-(14, CURRENT_DATE, '11:00:00', '20:00:00'),
-(14, DATEADD('DAY', 1, CURRENT_DATE), '11:00:00', '20:00:00'),
-(16, CURRENT_DATE, '09:00:00', '21:00:00'),
-(16, DATEADD('DAY', 1, CURRENT_DATE), '09:00:00', '21:00:00'),
-(3, CURRENT_DATE, '09:00:00', '17:00:00'),
-(3, DATEADD('DAY', 1, CURRENT_DATE), '09:00:00', '17:00:00'),
-(9, CURRENT_DATE, '10:00:00', '16:00:00'),
-(9, DATEADD('DAY', 1, CURRENT_DATE), '10:00:00', '16:00:00'),
-(12, CURRENT_DATE, '12:00:00', '20:00:00'),
-(12, DATEADD('DAY', 1, CURRENT_DATE), '12:00:00', '20:00:00'),
-(18, CURRENT_DATE, '09:00:00', '18:00:00'),
-(18, DATEADD('DAY', 1, CURRENT_DATE), '09:00:00', '18:00:00'),
-(19, CURRENT_DATE, '11:00:00', '19:00:00'),
-(19, DATEADD('DAY', 1, CURRENT_DATE), '11:00:00', '19:00:00');
+(1, DATEADD('DAY', 2, CURRENT_DATE), '09:00:00', '18:00:00'),
+(1, DATEADD('DAY', 3, CURRENT_DATE), '09:00:00', '18:00:00'),
+(1, DATEADD('DAY', 4, CURRENT_DATE), '09:00:00', '18:00:00'),
+(1, DATEADD('DAY', 5, CURRENT_DATE), '09:00:00', '18:00:00'),
+(1, DATEADD('DAY', 6, CURRENT_DATE), '09:00:00', '18:00:00'),
+(1, DATEADD('DAY', 7, CURRENT_DATE), '09:00:00', '18:00:00'),
+(3, CURRENT_DATE, '10:00:00', '19:00:00'),
+(3, DATEADD('DAY', 1, CURRENT_DATE), '10:00:00', '19:00:00'),
+(3, DATEADD('DAY', 2, CURRENT_DATE), '10:00:00', '19:00:00'),
+(3, DATEADD('DAY', 3, CURRENT_DATE), '10:00:00', '19:00:00'),
+(3, DATEADD('DAY', 4, CURRENT_DATE), '10:00:00', '19:00:00'),
+(3, DATEADD('DAY', 5, CURRENT_DATE), '10:00:00', '19:00:00'),
+(3, DATEADD('DAY', 6, CURRENT_DATE), '10:00:00', '19:00:00'),
+(3, DATEADD('DAY', 7, CURRENT_DATE), '10:00:00', '19:00:00');
+
+-- Funciones de teatro (naves 2 y 3): un par de eventos por nave con fechas relativas
+-- a CURRENT_DATE, para que la app de entradas y el panel de ventas siempre tengan algo.
+-- ids resultantes (nave nueva, DB en memoria): 1 y 2 -> Millennium Falcon, 3 -> Galactica
+INSERT INTO theater_events (spacecraft_id, event_type, start_date, end_date, event_time) VALUES
+(2, 'MUSICA', CURRENT_DATE, DATEADD('DAY', 7, CURRENT_DATE), '19:00:00'),
+(2, 'ARTES', CURRENT_DATE, DATEADD('DAY', 4, CURRENT_DATE), '21:00:00'),
+(3, 'LIBRE', CURRENT_DATE, DATEADD('DAY', 7, CURRENT_DATE), '18:00:00');
+
+-- Entradas de museo ya vendidas (naves 1 y 3), en horas dentro del horario de arriba,
+-- para que el panel de "entradas vendidas" del admin no arranque en cero.
+INSERT INTO museum_tickets (spacecraft_id, visit_date, visit_time, quantity, buyer_name, buyer_email, confirmation_code, status) VALUES
+(1, CURRENT_DATE, '10:00:00', 3, 'Alice Nova', 'alice.nova@example.com', 'MUS-DEMO0001', 'ACTIVE'),
+(1, CURRENT_DATE, '14:00:00', 2, 'Ben Orbit', 'ben.orbit@example.com', 'MUS-DEMO0002', 'ACTIVE'),
+(1, DATEADD('DAY', 1, CURRENT_DATE), '11:00:00', 5, 'Cleo Star', 'cleo.star@example.com', 'MUS-DEMO0003', 'ACTIVE'),
+(3, CURRENT_DATE, '12:00:00', 8, 'Dax Comet', 'dax.comet@example.com', 'MUS-DEMO0004', 'ACTIVE'),
+(3, DATEADD('DAY', 2, CURRENT_DATE), '15:00:00', 4, 'Eve Pulsar', 'eve.pulsar@example.com', 'MUS-DEMO0005', 'ACTIVE'),
+(3, CURRENT_DATE, '17:00:00', 6, 'Finn Quasar', 'finn.quasar@example.com', 'MUS-DEMO0006', 'CANCELLED');
+
+-- Entradas de teatro ya vendidas (eventos 1 y 3), con asientos ya ocupados para que el
+-- mapa de 100 asientos y el resumen de ventas por evento tengan datos reales.
+-- ids resultantes: entradas 1-4, en ese orden
+INSERT INTO theater_tickets (event_id, function_date, buyer_name, buyer_email, confirmation_code, status) VALUES
+(1, CURRENT_DATE, 'Alice Nova', 'alice.nova@example.com', 'THT-DEMO0001', 'ACTIVE'),
+(1, DATEADD('DAY', 1, CURRENT_DATE), 'Ben Orbit', 'ben.orbit@example.com', 'THT-DEMO0002', 'ACTIVE'),
+(3, CURRENT_DATE, 'Cleo Star', 'cleo.star@example.com', 'THT-DEMO0003', 'ACTIVE'),
+(3, CURRENT_DATE, 'Dax Comet', 'dax.comet@example.com', 'THT-DEMO0004', 'CANCELLED');
+
+INSERT INTO theater_ticket_seats (ticket_id, seat_number) VALUES
+(1, 5), (1, 6), (1, 7),
+(2, 10), (2, 11),
+(3, 1), (3, 2), (3, 3), (3, 4),
+(4, 50);
