@@ -26,6 +26,9 @@ public class MuseumTicketService {
     private static final int WINDOW_DAYS = 8;
     private static final int MAX_QUANTITY_PER_PURCHASE = 10;
 
+    // Fase de integracion: nota que identifica el origen del cargo en el panel de BankIn.
+    private static final String BANKIN_NOTE = "naveSpace Tickets";
+
     @Autowired
     private MuseumTicketRepository museumTicketRepository;
 
@@ -37,6 +40,9 @@ public class MuseumTicketService {
 
     @Autowired
     private EmailNotificationService emailNotificationService;
+
+    @Autowired
+    private BankInPaymentService bankInPaymentService;
 
     // Cupos disponibles por cada turno de una hora, dentro del horario abierto de ese dia
     public List<Map<String, Object>> getAvailability(Long spacecraftId, LocalDate date) {
@@ -89,11 +95,24 @@ public class MuseumTicketService {
             throw new IllegalArgumentException("buyerName and buyerEmail are required");
         }
 
+        if (isBlank(request.getCardId())) {
+            throw new IllegalArgumentException("cardId is required to pay with BankIn");
+        }
+
         validateSlot(spacecraft, request.getVisitDate(), request.getVisitTime(), request.getQuantity());
+
+        // Fase de integracion: se cobra ANTES de guardar la entrada. Si BankIn no confirma el
+        // cobro (201), no se persiste ningun ticket - el cupo nunca llega a reservarse ni a
+        // descontarse de la disponibilidad de ese horario.
+        double unitPrice = spacecraft.getTicketPrice() != null ? spacecraft.getTicketPrice() : BankInPaymentService.DEFAULT_TICKET_PRICE;
+        double amount = unitPrice * request.getQuantity();
+        BankInPaymentService.ChargeResult charge = bankInPaymentService.charge(request.getCardId(), amount, BANKIN_NOTE);
 
         request.setId(null);
         request.setConfirmationCode(generateConfirmationCode("MUS"));
         request.setStatus(TicketStatus.ACTIVE);
+        request.setBankinTransactionId(charge.transactionId());
+        request.setAmountCharged(charge.amount());
 
         MuseumTicket saved = museumTicketRepository.save(request);
         emailNotificationService.sendMuseumConfirmation(saved, spacecraft);
@@ -103,7 +122,10 @@ public class MuseumTicketService {
     public MuseumTicket cancel(Long id) {
         MuseumTicket ticket = getActiveOrThrow(id);
         ticket.setStatus(TicketStatus.CANCELLED);
-        return museumTicketRepository.save(ticket);
+        MuseumTicket saved = museumTicketRepository.save(ticket);
+        // Fase de integracion: revierte el cobro en BankIn (best-effort, no bloquea la cancelacion).
+        bankInPaymentService.reverse(saved.getBankinTransactionId());
+        return saved;
     }
 
     public MuseumTicket reschedule(Long id, LocalDate newDate, LocalTime newTime) {

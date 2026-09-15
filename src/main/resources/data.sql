@@ -1,15 +1,15 @@
-INSERT INTO spacecrafts (name, franchise, crew_capacity, speed, spacecraft_type, is_armed, status) VALUES
-('USS Enterprise', 'Star Trek', 430, 9.6, 'Exploration', true, 'OPERATIVA'),
-('Millennium Falcon', 'Star Wars', 6, 1050, 'Freighter', true, 'OPERATIVA'),
-('Galactica', 'Battlestar Galactica', 2500, 8.0, 'Battlestar', true, 'OPERATIVA'),
-('Serenity', 'Firefly', 5, 1.5, 'Transport', false, 'OPERATIVA');
+INSERT INTO spacecrafts (name, franchise, crew_capacity, speed, spacecraft_type, is_armed, status, ticket_price) VALUES
+('USS Enterprise', 'Star Trek', 430, 9.6, 'Exploration', true, 'OPERATIVA', 12.50),
+('Millennium Falcon', 'Star Wars', 6, 1050, 'Freighter', true, 'OPERATIVA', 35.00),
+('Galactica', 'Battlestar Galactica', 2500, 8.0, 'Battlestar', true, 'OPERATIVA', 20.00),
+('Serenity', 'Firefly', 5, 1.5, 'Transport', false, 'OPERATIVA', NULL);
 
 -- Demo simplificada a proposito: 4 naves, una por cada combinacion posible de recinto,
 -- para no depender de cual nave se pruebe -> todas tienen datos de sobra.
---   1: USS Enterprise    -> solo museo
---   2: Millennium Falcon -> solo teatro
---   3: Galactica         -> museo + teatro
---   4: Serenity          -> ninguno (nave "normal", sin recinto)
+--   1: USS Enterprise    -> solo museo   ($12.50 por persona)
+--   2: Millennium Falcon -> solo teatro  ($35.00 por asiento)
+--   3: Galactica         -> museo + teatro ($20.00 por persona/asiento)
+--   4: Serenity          -> ninguno (nave "normal", sin recinto ni precio)
 UPDATE spacecrafts SET is_museum = true, museum_capacity = 150 WHERE id = 1;
 UPDATE spacecrafts SET is_theater = true WHERE id = 2;
 UPDATE spacecrafts SET is_museum = true, is_theater = true, museum_capacity = 300 WHERE id = 3;
@@ -45,6 +45,7 @@ INSERT INTO theater_events (spacecraft_id, event_type, start_date, end_date, eve
 
 -- Entradas de museo ya vendidas (naves 1 y 3), en horas dentro del horario de arriba,
 -- para que el panel de "entradas vendidas" del admin no arranque en cero.
+-- (De antes de la fase de integracion con BankIn: sin bankin_transaction_id/amount_charged.)
 INSERT INTO museum_tickets (spacecraft_id, visit_date, visit_time, quantity, buyer_name, buyer_email, confirmation_code, status) VALUES
 (1, CURRENT_DATE, '10:00:00', 3, 'Alice Nova', 'alice.nova@example.com', 'MUS-DEMO0001', 'ACTIVE'),
 (1, CURRENT_DATE, '14:00:00', 2, 'Ben Orbit', 'ben.orbit@example.com', 'MUS-DEMO0002', 'ACTIVE'),

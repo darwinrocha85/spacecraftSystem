@@ -23,12 +23,14 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(body, HttpStatus.NOT_FOUND);
     }
 
-    // Manejo de excepciones generales
+    // Manejo de excepciones generales. Fase de integracion BankIn: este es el mismo camino que usan
+    // los errores de configuracion/conectividad con BankIn (401, timeouts) - a proposito el mensaje
+    // es generico y no expone detalles al comprador; el detalle real solo queda en el log del servidor.
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Object> handleGeneralException(Exception ex, WebRequest request) {
         Map<String, Object> body = new HashMap<>();
         body.put("timestamp", LocalDateTime.now());
-        body.put("message", "An unexpected error occurred");
+        body.put("message", "Ocurrio un error inesperado. Intenta de nuevo mas tarde.");
         return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 

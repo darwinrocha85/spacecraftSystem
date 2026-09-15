@@ -1,5 +1,6 @@
 package com.rocha.spacecraftmanagementsystem.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -8,6 +9,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -51,4 +53,20 @@ public class MuseumTicket {
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
     private TicketStatus status;
+
+    // Fase de integracion BankIn: numero de tarjeta ingresado en el checkout. Se usa solo para
+    // llamar a BankIn al comprar - nunca se persiste (@Transient) ni se devuelve en la respuesta
+    // (WRITE_ONLY), para no guardar el numero de tarjeta en nuestra propia base de datos.
+    @Transient
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    private String cardId;
+
+    // Referencia al cobro real en BankIn (para poder correlacionar o anular manualmente si hace falta).
+    @Column(name = "bankin_transaction_id")
+    private Long bankinTransactionId;
+
+    // Monto efectivamente cobrado por BankIn (se guarda aparte del precio de la nave,
+    // que puede cambiar despues de la compra).
+    @Column(name = "amount_charged")
+    private Double amountCharged;
 }

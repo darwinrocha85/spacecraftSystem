@@ -50,6 +50,12 @@ public class Spacecraft {
     @Column(name = "museum_capacity") // Maximo de personas dentro del museo al mismo tiempo (obligatorio si isMuseum = true)
     private Integer museumCapacity;
 
+    // Fase de integracion BankIn: precio de la entrada (aplica tanto a museo como a teatro).
+    // Nullable a proposito: si no esta configurado, el cobro usa un precio por defecto
+    // (ver BankInPaymentService.DEFAULT_TICKET_PRICE) en vez de fallar la compra.
+    @Column(name = "ticket_price")
+    private Double ticketPrice;
+
     // Fase 3: estado operativo / taller de reparacion. Default OPERATIVA para naves nuevas.
     @Enumerated(EnumType.STRING)
     @Column(name = "status", length = 30)

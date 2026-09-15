@@ -1,6 +1,7 @@
 package com.rocha.spacecraftmanagementsystem.service;
 
 import com.rocha.spacecraftmanagementsystem.exception.ResourceNotFoundException;
+import com.rocha.spacecraftmanagementsystem.exception.SpacecraftNotFoundException;
 import com.rocha.spacecraftmanagementsystem.model.Spacecraft;
 import com.rocha.spacecraftmanagementsystem.model.TheaterEvent;
 import com.rocha.spacecraftmanagementsystem.model.TheaterTicket;
@@ -20,6 +21,9 @@ public class TheaterTicketService {
 
     private static final int MAX_SEATS_PER_PURCHASE = 5;
 
+    // Fase de integracion: nota que identifica el origen del cargo en el panel de BankIn.
+    private static final String BANKIN_NOTE = "naveSpace Tickets";
+
     @Autowired
     private TheaterTicketRepository theaterTicketRepository;
 
@@ -31,6 +35,9 @@ public class TheaterTicketService {
 
     @Autowired
     private EmailNotificationService emailNotificationService;
+
+    @Autowired
+    private BankInPaymentService bankInPaymentService;
 
     public TheaterTicket purchase(TheaterTicket request) {
         TheaterEvent event = theaterEventService.getById(request.getEventId());
@@ -61,6 +68,10 @@ public class TheaterTicketService {
             throw new IllegalArgumentException("buyerName and buyerEmail are required");
         }
 
+        if (isBlank(request.getCardId())) {
+            throw new IllegalArgumentException("cardId is required to pay with BankIn");
+        }
+
         List<TheaterTicket> existing = theaterTicketRepository.findByEventIdAndFunctionDateAndStatus(
                 request.getEventId(), request.getFunctionDate(), TicketStatus.ACTIVE);
         Set<Integer> occupied = new HashSet<>();
@@ -73,13 +84,23 @@ public class TheaterTicketService {
             }
         }
 
+        Spacecraft spacecraft = spacecraftRepository.findById(event.getSpacecraftId())
+                .orElseThrow(() -> new SpacecraftNotFoundException("Spacecraft with ID " + event.getSpacecraftId() + " not found"));
+
+        // Fase de integracion: se cobra ANTES de guardar la entrada. Si BankIn no confirma el
+        // cobro (201), no se persiste ningun ticket - los asientos nunca llegan a ocuparse.
+        double unitPrice = spacecraft.getTicketPrice() != null ? spacecraft.getTicketPrice() : BankInPaymentService.DEFAULT_TICKET_PRICE;
+        double amount = unitPrice * seats.size();
+        BankInPaymentService.ChargeResult charge = bankInPaymentService.charge(request.getCardId(), amount, BANKIN_NOTE);
+
         request.setId(null);
         request.setConfirmationCode("THT-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
         request.setStatus(TicketStatus.ACTIVE);
+        request.setBankinTransactionId(charge.transactionId());
+        request.setAmountCharged(charge.amount());
 
         TheaterTicket saved = theaterTicketRepository.save(request);
 
-        Spacecraft spacecraft = spacecraftRepository.findById(event.getSpacecraftId()).orElse(null);
         emailNotificationService.sendTheaterConfirmation(saved, event, spacecraft);
 
         return saved;
@@ -92,7 +113,10 @@ public class TheaterTicketService {
             throw new IllegalArgumentException("Theater ticket " + id + " is not active");
         }
         ticket.setStatus(TicketStatus.CANCELLED);
-        return theaterTicketRepository.save(ticket);
+        TheaterTicket saved = theaterTicketRepository.save(ticket);
+        // Fase de integracion: revierte el cobro en BankIn (best-effort, no bloquea la cancelacion).
+        bankInPaymentService.reverse(saved.getBankinTransactionId());
+        return saved;
     }
 
     public TheaterTicket findByConfirmationCode(String code) {

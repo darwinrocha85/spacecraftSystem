@@ -34,8 +34,10 @@ public class EmailNotificationService {
                 + "Fecha: " + ticket.getVisitDate() + "\n"
                 + "Hora: " + ticket.getVisitTime() + "\n"
                 + "Cupos: " + ticket.getQuantity() + "\n"
-                + "Codigo de confirmacion: " + ticket.getConfirmationCode() + "\n\n"
-                + "Esta es una demo. Esta entrada no tiene validez legal ni implica ningun cobro real.";
+                + "Codigo de confirmacion: " + ticket.getConfirmationCode() + "\n"
+                + "Cobro BankIn: " + formatAmount(ticket.getAmountCharged()) + " (transaccion #" + ticket.getBankinTransactionId() + ")\n\n"
+                + "Esta es una demo educativa. El cobro fue procesado de verdad por BankIn (entorno demo), "
+                + "pero esta entrada no tiene validez legal.";
         send(ticket.getBuyerEmail(), body);
     }
 
@@ -44,9 +46,15 @@ public class EmailNotificationService {
                 + "Nave: " + (spacecraft != null ? spacecraft.getName() : event.getSpacecraftId()) + "\n"
                 + "Funcion: " + ticket.getFunctionDate() + " " + event.getTime() + "\n"
                 + "Asientos: " + ticket.getSeats() + "\n"
-                + "Codigo de confirmacion: " + ticket.getConfirmationCode() + "\n\n"
-                + "Esta es una demo. Esta entrada no tiene validez legal ni implica ningun cobro real.";
+                + "Codigo de confirmacion: " + ticket.getConfirmationCode() + "\n"
+                + "Cobro BankIn: " + formatAmount(ticket.getAmountCharged()) + " (transaccion #" + ticket.getBankinTransactionId() + ")\n\n"
+                + "Esta es una demo educativa. El cobro fue procesado de verdad por BankIn (entorno demo), "
+                + "pero esta entrada no tiene validez legal.";
         send(ticket.getBuyerEmail(), body);
+    }
+
+    private String formatAmount(Double amount) {
+        return amount == null ? "-" : String.format("$%.2f", amount);
     }
 
     private void send(String to, String body) {
