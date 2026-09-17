@@ -112,10 +112,24 @@ public class TheaterTicketService {
         if (ticket.getStatus() != TicketStatus.ACTIVE) {
             throw new IllegalArgumentException("Theater ticket " + id + " is not active");
         }
+
+        // El TheaterEvent puede haber sido borrado desde la compra (Fase 3: se borra al pasar la nave a
+        // reparacion) - se busca con calma, sin romper la cancelacion si ya no existe.
+        TheaterEvent event = null;
+        Spacecraft spacecraft = null;
+        try {
+            event = theaterEventService.getById(ticket.getEventId());
+            spacecraft = spacecraftRepository.findById(event.getSpacecraftId()).orElse(null);
+        } catch (ResourceNotFoundException e) {
+            // el evento ya no existe: se cancela igual, el email de cancelacion se manda sin esos datos.
+        }
+
         ticket.setStatus(TicketStatus.CANCELLED);
         TheaterTicket saved = theaterTicketRepository.save(ticket);
         // Fase de integracion: revierte el cobro en BankIn (best-effort, no bloquea la cancelacion).
-        bankInPaymentService.reverse(saved.getBankinTransactionId());
+        boolean refunded = bankInPaymentService.reverse(saved.getBankinTransactionId());
+        // Fase 7: email de cancelacion, mismo patron best-effort que el de compra - nunca bloquea la cancelacion.
+        emailNotificationService.sendTheaterCancellation(saved, event, spacecraft, refunded);
         return saved;
     }
 

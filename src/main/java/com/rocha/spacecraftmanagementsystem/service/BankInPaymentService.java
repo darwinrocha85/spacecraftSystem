@@ -33,7 +33,7 @@ public class BankInPaymentService {
     // BANKIN_API_BASE mal apuntado, etc.). Es un demo: a diferencia del 401 (API key mal configurada,
     // que es un error nuestro y no se muestra), esto SI es seguro/util decirlo tal cual.
     private static final String BANKIN_UNREACHABLE_MESSAGE =
-            "No se pudo conectar con BankIn. Asegurate de que la app de BankIn este corriendo e intenta de nuevo.";
+            "No se pudo conectar con BankIn. Asegurate de que la app de BankIn este corriendo (y que BANKIN_API_BASE apunte a esa URL) e intenta de nuevo.";
 
     @Value("${bankin.api.base}")
     private String apiBase;
@@ -110,9 +110,11 @@ public class BankInPaymentService {
     // naveSpace puede dispararlo solo, sin intervencion humana, al cancelar una entrada.
     // Best-effort: si BankIn no esta disponible o rechaza la reversa, se registra en el log pero NO se
     // bloquea la cancelacion local - el cupo/asiento se libera igual (no hay reintento automatico).
-    public void reverse(Long transactionId) {
+    // Fase 7: devuelve si la reversion se confirmo o no, solo para que el email de cancelacion pueda
+    // decir con precision si el reembolso quedo confirmado o no (sigue sin bloquear ni reintentar nada).
+    public boolean reverse(Long transactionId) {
         if (transactionId == null) {
-            return;
+            return false;
         }
 
         HttpHeaders headers = new HttpHeaders();
@@ -125,9 +127,11 @@ public class BankInPaymentService {
             restTemplate.exchange(apiBase + "/transactions/" + transactionId + "/reverse",
                     HttpMethod.POST, entity, String.class);
             logger.info("BankIn: transaccion {} revertida por cancelacion de entrada.", transactionId);
+            return true;
         } catch (RestClientException e) {
             logger.error("No se pudo revertir en BankIn la transaccion {} (la entrada se cancela igual, sin reintento automatico): {}",
                     transactionId, e.getMessage());
+            return false;
         }
     }
 

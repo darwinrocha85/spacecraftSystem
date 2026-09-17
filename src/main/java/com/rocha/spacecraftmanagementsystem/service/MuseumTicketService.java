@@ -121,10 +121,15 @@ public class MuseumTicketService {
 
     public MuseumTicket cancel(Long id) {
         MuseumTicket ticket = getActiveOrThrow(id);
+        // Nave puede no existir mas en teoria (no hay borrado de naves hoy, pero se toma con calma
+        // igual que en purchase()/reschedule(): el email de cancelacion cae al id si spacecraft es null.
+        Spacecraft spacecraft = spacecraftRepository.findById(ticket.getSpacecraftId()).orElse(null);
         ticket.setStatus(TicketStatus.CANCELLED);
         MuseumTicket saved = museumTicketRepository.save(ticket);
         // Fase de integracion: revierte el cobro en BankIn (best-effort, no bloquea la cancelacion).
-        bankInPaymentService.reverse(saved.getBankinTransactionId());
+        boolean refunded = bankInPaymentService.reverse(saved.getBankinTransactionId());
+        // Fase 7: email de cancelacion, mismo patron best-effort que el de compra - nunca bloquea la cancelacion.
+        emailNotificationService.sendMuseumCancellation(saved, spacecraft, refunded);
         return saved;
     }
 
