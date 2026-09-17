@@ -25,8 +25,8 @@ public class CorsConfig {
                                 "https://spacecraft-tickets.firebaseapp.com",
                                 "https://spacecraft-taller.web.app",
                                 "https://spacecraft-taller.firebaseapp.com",
-                                "https://spacecraft-events.web.app",
-                                "https://spacecraft-events.firebaseapp.com"
+                                "https://spacecraft-events-landing.web.app",
+                                "https://spacecraft-events-landing.firebaseapp.com"
                         )
                         .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
                         .allowedHeaders("*");
