@@ -25,6 +25,8 @@ public class CorsConfig {
                                 "https://spacecraft-tickets.firebaseapp.com",
                                 "https://spacecraft-taller.web.app",
                                 "https://spacecraft-taller.firebaseapp.com",
+                                "https://spacecraft-taller-frontend.web.app",
+                                "https://spacecraft-taller-frontend.firebaseapp.com",
                                 "https://spacecraft-events-landing.web.app",
                                 "https://spacecraft-events-landing.firebaseapp.com"
                         )
