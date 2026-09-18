@@ -1,19 +1,27 @@
 package com.rocha.spacecraftmanagementsystem.service;
 
+import com.resend.Resend;
+import com.resend.core.exception.ResendException;
+import com.resend.services.emails.model.CreateEmailOptions;
+import com.resend.services.emails.model.CreateEmailResponse;
 import com.rocha.spacecraftmanagementsystem.model.MuseumTicket;
 import com.rocha.spacecraftmanagementsystem.model.Spacecraft;
 import com.rocha.spacecraftmanagementsystem.model.TheaterEvent;
 import com.rocha.spacecraftmanagementsystem.model.TheaterTicket;
+import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
-// Envio de confirmacion best-effort: si falla (SMTP no configurado o credenciales de prueba),
-// solo se registra en el log y la compra queda igual de confirmada - nunca bloquea el checkout.
+// Envio de confirmacion best-effort: si falla (falta RESEND_API_KEY, Resend caido, destinatario no
+// habilitado en el dominio de prueba, etc.) solo se registra en el log y la compra/cancelacion queda
+// igual - nunca bloquea el checkout ni la cancelacion.
+//
+// Fase 7.1 (2026-09-18): se reemplazo JavaMailSender/SMTP por la API HTTP de Resend. Render bloquea el
+// trafico saliente a los puertos SMTP (25/465/587) en los servicios Free desde el 26/09/2025, asi que el
+// envio via smtp.gmail.com nunca iba a conectar en produccion (timeout de conexion, no de credenciales).
+// Resend manda por HTTPS (puerto 443), que si esta permitido.
 @Service
 public class EmailNotificationService {
 
@@ -22,13 +30,27 @@ public class EmailNotificationService {
     // Fase 7: asunto propio para el email de cancelacion, para distinguirlo del de compra en la bandeja.
     private static final String CANCELLATION_SUBJECT = "Cancelacion confirmada - Esto es una prueba - no vincula de forma legal";
 
-    // required = false: si por algun motivo Spring no llega a crear el bean de mail,
-    // la app igual arranca y solo se omite el envio (en vez de fallar el startup completo).
-    @Autowired(required = false)
-    private JavaMailSender mailSender;
+    @Value("${resend.api.key:}")
+    private String apiKey;
 
-    @Value("${spring.mail.username:no-reply@spacecraft-system.demo}")
+    // Mientras no se verifique un dominio propio en Resend, tiene que quedarse en "onboarding@resend.dev"
+    // (ver resend.from en application.properties) - con esa direccion Resend solo entrega a la casilla
+    // con la que te registraste, cualquier otro destinatario da 403.
+    @Value("${resend.from:onboarding@resend.dev}")
     private String fromAddress;
+
+    // null si RESEND_API_KEY no esta configurada: la app arranca igual, el envio simplemente se omite
+    // (mismo criterio best-effort que antes con JavaMailSender required = false).
+    private Resend resend;
+
+    @PostConstruct
+    private void init() {
+        if (apiKey != null && !apiKey.isBlank()) {
+            resend = new Resend(apiKey);
+        } else {
+            logger.warn("RESEND_API_KEY no configurada; el envio de emails de confirmacion/cancelacion queda deshabilitado.");
+        }
+    }
 
     public void sendMuseumConfirmation(MuseumTicket ticket, Spacecraft spacecraft) {
         String body = "Confirmacion de visita al museo\n\n"
@@ -105,17 +127,22 @@ public class EmailNotificationService {
     }
 
     private void send(String to, String subject, String body) {
-        if (mailSender == null) {
-            logger.warn("JavaMailSender no disponible; se omite el email a {}", to);
+        if (resend == null) {
+            logger.warn("Resend no disponible (falta RESEND_API_KEY); se omite el email a {}", to);
             return;
         }
         try {
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom(fromAddress);
-            message.setTo(to);
-            message.setSubject(subject);
-            message.setText(body);
-            mailSender.send(message);
+            CreateEmailOptions params = CreateEmailOptions.builder()
+                    .from(fromAddress)
+                    .to(to)
+                    .subject(subject)
+                    .text(body)
+                    .build();
+            CreateEmailResponse response = resend.emails().send(params);
+            logger.info("Email enviado a {} via Resend (id {})", to, response.getId());
+        } catch (ResendException e) {
+            logger.warn("No se pudo enviar el email a {} via Resend (status {} / {}): {}",
+                    to, e.getStatusCode(), e.getErrorName(), e.getMessage());
         } catch (Exception e) {
             logger.warn("No se pudo enviar el email a {}: {}", to, e.getMessage());
         }
