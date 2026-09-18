@@ -71,8 +71,12 @@ public class SpacecraftController {
 
     // Eliminar una nave espacial por ID
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteSpacecraft(@PathVariable Long id) {
-       return spacecraftService.deleteSpacecraft(id);
+    public ResponseEntity<?> deleteSpacecraft(@PathVariable Long id) {
+        try {
+            return spacecraftService.deleteSpacecraft(id);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
     }
 
     // Obtener todas las naves espaciales que contienen un texto en su nombre con paginacion

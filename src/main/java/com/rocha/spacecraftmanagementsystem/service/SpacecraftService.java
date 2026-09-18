@@ -1,6 +1,7 @@
 package com.rocha.spacecraftmanagementsystem.service;
 
 import com.rocha.spacecraftmanagementsystem.model.Spacecraft;
+import com.rocha.spacecraftmanagementsystem.model.SpacecraftStatus;
 import com.rocha.spacecraftmanagementsystem.repository.SpacecraftRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
@@ -71,6 +72,9 @@ public class SpacecraftService {
 
         if (optionalSpacecraft.isPresent()) {
             Spacecraft spacecraft = optionalSpacecraft.get();
+            if (spacecraft.getStatus() == SpacecraftStatus.EN_TALLER) {
+                throw new IllegalArgumentException("No se puede editar una nave que está en el taller");
+            }
             spacecraft.setName(spacecraftDetails.getName());
             spacecraft.setFranchise(spacecraftDetails.getFranchise());
             spacecraft.setCrewCapacity(spacecraftDetails.getCrewCapacity());
@@ -80,6 +84,7 @@ public class SpacecraftService {
             spacecraft.setIsMuseum(spacecraftDetails.getIsMuseum());
             spacecraft.setIsTheater(spacecraftDetails.getIsTheater());
             spacecraft.setMuseumCapacity(spacecraftDetails.getMuseumCapacity());
+            spacecraft.setTicketPrice(spacecraftDetails.getTicketPrice());
 
             validateVenueFields(spacecraft);
 
@@ -92,12 +97,15 @@ public class SpacecraftService {
 
     @CacheEvict(value = "spacecrafts", key = "#id")
     public ResponseEntity<Void> deleteSpacecraft(@PathVariable Long id) {
-        if (spacecraftRepository.existsById(id)) {
-            spacecraftRepository.deleteById(id);
-            return ResponseEntity.noContent().build();
-        } else {
+        Optional<Spacecraft> optional = spacecraftRepository.findById(id);
+        if (optional.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
+        if (optional.get().getStatus() == SpacecraftStatus.EN_TALLER) {
+            throw new IllegalArgumentException("No se puede eliminar una nave que está en el taller");
+        }
+        spacecraftRepository.deleteById(id);
+        return ResponseEntity.noContent().build();
     }
 
 

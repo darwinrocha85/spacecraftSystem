@@ -3,7 +3,6 @@ package com.rocha.spacecraftmanagementsystem.service;
 import com.rocha.spacecraftmanagementsystem.exception.ResourceNotFoundException;
 import com.rocha.spacecraftmanagementsystem.exception.SpacecraftNotFoundException;
 import com.rocha.spacecraftmanagementsystem.model.ClosedTheaterEvent;
-import com.rocha.spacecraftmanagementsystem.model.DamageCategory;
 import com.rocha.spacecraftmanagementsystem.model.MuseumSchedule;
 import com.rocha.spacecraftmanagementsystem.model.MuseumTicket;
 import com.rocha.spacecraftmanagementsystem.model.RepairDamage;
@@ -25,11 +24,17 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 // Fase 3: taller de reparacion. Gestion interna de flota (sin venta de entradas ni cara publica).
+//
+// Fase 1 (extraccion del taller a backend Python): spacecraftSystem sigue siendo quien orquesta
+// "enviar a taller" - valida, cancela entradas activas y revierte sus cobros con BankIn (logica
+// preexistente) - pero el detalle fino de la reparacion (sub-estados, presupuesto, repuestos) se
+// movio a spacecraft-taller-backend (Python). Por eso ya no existen aca advanceStatus()/finish()
+// (eran del sub-estado detallado); en su lugar hay receiveFromTaller(), que es lo unico que
+// necesita seguir en Java porque toca el Spacecraft.status de este backend.
 @Service
 public class RepairService {
 
@@ -51,18 +56,11 @@ public class RepairService {
     @Autowired
     private TheaterTicketRepository theaterTicketRepository;
 
-    // Catalogo de danos (categoria -> etiqueta + subtipos), para el cascada de selects del frontend.
-    // No depende de ninguna nave en particular.
-    public Map<String, Object> getDamageCatalog() {
-        Map<String, Object> catalog = new LinkedHashMap<>();
-        for (DamageCategory category : DamageCategory.values()) {
-            catalog.put(category.name(), Map.of(
-                    "label", category.getLabel(),
-                    "subtypes", category.getSubtypes()
-            ));
-        }
-        return catalog;
-    }
+    @Autowired
+    private BankInPaymentService bankInPaymentService;
+
+    @Autowired
+    private TallerBackendClient tallerBackendClient;
 
     // Cuenta cuantas entradas activas se cancelarian si esta nave entra al taller ahora.
     // Lo usa el frontend para decidir si mostrar el popup de confirmacion antes de enviar.
@@ -89,10 +87,10 @@ public class RepairService {
         );
     }
 
-    // Envia la nave al taller: valida que este operativa, cancela entradas activas y cierra
-    // (borra) horarios de museo y funciones de teatro, y crea el historial de reparacion con
-    // los danos elegidos. request llega del frontend con al menos "damages"; el resto de sus
-    // campos (id, status, sentAt) se sobreescriben aqui, igual que en las compras de Fase 2.
+    // Envia la nave al taller: valida que este operativa, cancela entradas activas (revirtiendo
+    // su cobro en BankIn) y cierra (borra) horarios de museo y funciones de teatro, crea el
+    // resumen de historial local, y recien despues avisa al backend de taller (Python) para que
+    // cree su propio registro de reparacion con el detalle de danos.
     public RepairRecord sendToTaller(Long spacecraftId, RepairRecord request) {
         Spacecraft spacecraft = getSpacecraftOrThrow(spacecraftId);
 
@@ -118,6 +116,12 @@ public class RepairService {
         }
         museumTicketRepository.saveAll(activeMuseumTickets);
         cancelledCount += activeMuseumTickets.size();
+        // Fase 1: revierte el cobro de cada entrada de museo cancelada (best-effort, mismo patron
+        // que MuseumTicketService.cancel() - bug encontrado al extraer el taller: antes esta
+        // cancelacion masiva no revertia ningun cobro).
+        for (MuseumTicket ticket : activeMuseumTickets) {
+            bankInPaymentService.reverse(ticket.getBankinTransactionId());
+        }
 
         // Snapshot de lo que se va a cerrar - se guarda en el RepairRecord ANTES de borrar,
         // para no perder el historial de a cuanto se disrupta cada nave por reparaciones.
@@ -140,12 +144,16 @@ public class RepairService {
             }
             theaterTicketRepository.saveAll(activeTickets);
             cancelledCount += activeTickets.size();
+            // Fase 1: idem museo - revierte el cobro de cada entrada de teatro cancelada.
+            for (TheaterTicket ticket : activeTickets) {
+                bankInPaymentService.reverse(ticket.getBankinTransactionId());
+            }
         }
         theaterEventRepository.deleteAll(events);
 
         request.setId(null);
         request.setSpacecraftId(spacecraftId);
-        request.setStatus(SpacecraftStatus.ENTRO_A_TALLER);
+        request.setStatus(SpacecraftStatus.EN_TALLER);
         request.setSentAt(LocalDateTime.now());
         request.setFinishedAt(null);
         request.setCancelledTicketCount(cancelledCount);
@@ -153,42 +161,31 @@ public class RepairService {
         request.setClosedTheaterEvents(closedTheaterEvents);
         RepairRecord saved = repairRecordRepository.save(request);
 
-        spacecraft.setStatus(SpacecraftStatus.ENTRO_A_TALLER);
+        spacecraft.setStatus(SpacecraftStatus.EN_TALLER);
         spacecraftRepository.save(spacecraft);
+
+        // Fase 1: recien ahora que la cancelacion ya esta confirmada se avisa al backend de
+        // taller (Python). Best-effort: si falla, no se revierte nada de lo anterior (ver
+        // TallerBackendClient) - solo se refleja en la respuesta para que el admin lo note.
+        boolean synced = tallerBackendClient.notifyRepairCreated(
+                spacecraftId, spacecraft.getName(), spacecraft.getSpacecraftType(),
+                damages, closedMuseumDates, closedTheaterEvents);
+        saved.setTallerSyncFailed(!synced);
 
         return saved;
     }
 
-    // Cambia el sub-estado dentro del taller (ENTRO_A_TALLER, EN_REVISION, ESPERA_REPUESTOS,
-    // EN_PROCESO). No se usa para volver a OPERATIVA - eso es finish().
-    public RepairRecord advanceStatus(Long spacecraftId, SpacecraftStatus newStatus) {
+    // Fase 1: el dueño de la flota confirma que retiro la nave del taller (equivalente, del lado
+    // Java, al POST /repairs/{id}/receive de spacecraft-taller-backend). Idempotente: si la nave
+    // ya esta OPERATIVA, no hace nada y devuelve el ultimo registro tal cual.
+    public RepairRecord receiveFromTaller(Long spacecraftId) {
         Spacecraft spacecraft = getSpacecraftOrThrow(spacecraftId);
 
         if (spacecraft.getStatus() == null || spacecraft.getStatus() == SpacecraftStatus.OPERATIVA) {
-            throw new IllegalArgumentException("Spacecraft " + spacecraftId + " is not currently en el taller");
-        }
-
-        if (newStatus == null || newStatus == SpacecraftStatus.OPERATIVA) {
-            throw new IllegalArgumentException(
-                    "newStatus must be one of ENTRO_A_TALLER, EN_REVISION, ESPERA_REPUESTOS, EN_PROCESO");
-        }
-
-        RepairRecord current = getCurrentRecordOrThrow(spacecraftId);
-        current.setStatus(newStatus);
-        repairRecordRepository.save(current);
-
-        spacecraft.setStatus(newStatus);
-        spacecraftRepository.save(spacecraft);
-
-        return current;
-    }
-
-    // Finaliza la reparacion: la nave vuelve a OPERATIVA sin importar en que sub-estado estaba.
-    public RepairRecord finish(Long spacecraftId) {
-        Spacecraft spacecraft = getSpacecraftOrThrow(spacecraftId);
-
-        if (spacecraft.getStatus() == null || spacecraft.getStatus() == SpacecraftStatus.OPERATIVA) {
-            throw new IllegalArgumentException("Spacecraft " + spacecraftId + " is not currently en el taller");
+            return repairRecordRepository.findBySpacecraftIdOrderBySentAtDesc(spacecraftId).stream()
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            "Spacecraft " + spacecraftId + " no tiene historial de reparaciones"));
         }
 
         RepairRecord current = getCurrentRecordOrThrow(spacecraftId);
@@ -200,11 +197,6 @@ public class RepairService {
         spacecraftRepository.save(spacecraft);
 
         return current;
-    }
-
-    public List<RepairRecord> history(Long spacecraftId) {
-        getSpacecraftOrThrow(spacecraftId);
-        return repairRecordRepository.findBySpacecraftIdOrderBySentAtDesc(spacecraftId);
     }
 
     private void validateDamage(RepairDamage damage) {

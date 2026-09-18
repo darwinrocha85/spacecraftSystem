@@ -33,3 +33,9 @@ build/
 .vscode/
 
 spacecraftSystem.env
+
+# SQLite file persiste entre reinicios (no commitear)
+*.db
+*.sqlite
+*.sqlite3
+data/

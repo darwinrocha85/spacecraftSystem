@@ -11,6 +11,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -21,7 +22,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 // Fase 3: historial de reparaciones de una nave. Se crea al "enviar a taller" (status =
-// ENTRO_A_TALLER) y se cierra al "finalizar reparacion" (status = OPERATIVA, finishedAt seteado).
+// EN_TALLER) y se cierra al "recibir la nave" (status = OPERATIVA, finishedAt seteado).
+//
+// Fase 1 (extraccion del taller a backend Python): este registro pasa a ser solo un resumen
+// grueso para el historial/dashboard de spacecraftSystem (cuantas veces visito el taller, cuantas
+// entradas se cancelaron, que se cerro) - el detalle fino de la reparacion (sub-estados,
+// presupuesto, repuestos) ahora vive en spacecraft-taller-backend (Python).
 @Entity
 @Table(name = "repair_records")
 @Data
@@ -64,4 +70,11 @@ public class RepairRecord {
 
     @Column(name = "cancelled_ticket_count")
     private Integer cancelledTicketCount;
+
+    // Fase 1: no se persiste - solo indica en la respuesta de sendToTaller() si el aviso al
+    // backend de taller (Python) fallo (Python caido, timeout). La cancelacion de entradas ya
+    // quedo confirmada de cualquier forma; esto es solo para que el admin sepa que puede hacer
+    // falta reintentar la sincronizacion mas tarde.
+    @Transient
+    private Boolean tallerSyncFailed;
 }
