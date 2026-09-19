@@ -1,64 +1,42 @@
-# Proyecto Spacecraft
+# spacecraftSystem
 
-Este proyecto es una API REST para gestionar naves espaciales. La aplicación está construida utilizando **Spring Boot 3** y está diseñada para interactuar con una base de datos **H2** en memoria. También implementa **caché en memoria** con **Caffeine** para optimizar las consultas. Gestión centralizada de excepciones y un ejemplo con el decorador "@Aspect"
+API REST en **Spring Boot 3 / Java 17** que administra una flota de naves espaciales: alta y
+edición de naves, apertura como museo (visitas por franja horaria) o teatro (funciones con
+asientos), venta de entradas con cobro real vía BankIn, y el envío de una nave al taller de
+reparación.
 
-## Tecnologías Utilizadas
+## Stack
+- Spring Boot 3, Java 17, Maven
+- H2 en memoria (se reinicia en cada arranque; datos de demo en `data.sql`)
+- Caché con Caffeine, manejo centralizado de excepciones
 
-- **Framework**: Spring Boot 3
-- **Base de Datos**: H2 (base de datos en memoria)
-- **Cache**: Caffeine
-- **Lombok**: Para simplificar la creación de entidades con getters, setters y otros métodos
-- **Swagger**: Documentación interactiva de API (opcional)
+## Cómo correr en local
+```bash
+./mvnw spring-boot:run     # Windows: mvnw.cmd spring-boot:run
+```
+Levanta en `http://localhost:8080`. Consola H2: `http://localhost:8080/h2-console`.
 
-## Configuración del Proyecto
+Para el flujo completo (compra con cobro real, taller) necesita además `Bankin` (puerto 8000)
+y `spacecraft-taller-backend` (puerto 8001) corriendo.
 
-### Base de Datos H2
+## Áreas principales
+| Área | Qué hace |
+|---|---|
+| Flota | CRUD de naves |
+| Museo / Teatro | Disponibilidad, venta y cancelación de entradas, cobro real vía BankIn |
+| Taller | Envía la nave al taller (`spacecraft-taller-backend`), revierte ventas activas, la recibe de vuelta |
+| Marketing | Endpoint de solo lectura para la landing pública |
+| Dashboard | Ingresos, ocupación y estado de la flota para el panel admin |
+| Email | Confirmación de compra/cancelación, best-effort (nunca bloquea la operación) |
 
-Este proyecto usa una base de datos H2 en memoria que se inicializa al inicio de la aplicación. Puedes acceder a la consola H2 en `http://localhost:8080/h2-console` para inspeccionar la base de datos en tiempo de ejecución.
+## Variables de entorno
+Se configuran en un archivo `.env` local (no versionado): credenciales de BankIn, la clave
+interna compartida con el taller y, opcionalmente, credenciales SMTP para el email. Ningún
+valor real vive en este repo.
 
-### Cache en Memoria (Caffeine)
-
-La configuración de cache está centralizada para almacenar las consultas de naves espaciales por su ID, reduciendo el tiempo de respuesta en búsquedas repetidas.
-
-## Endpoints
-
-La API cuenta con los siguientes endpoints:
-
-| Método HTTP | Endpoint                         | Descripción                                                                                                                                   |
-|-------------|----------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------|
-| `GET`       | `/api/spacecrafts`               | Obtener todas las naves espaciales.                                                                                                           |
-| `GET`       | `/api/spacecrafts/page`          | Obtener todas las naves espaciales con paginación. Acepta parámetros `page`, `size`, `sortBy`, `sortDirection`.                              |
-| `GET`       | `/api/spacecrafts/{id}`          | Obtener una nave espacial por su ID. Este endpoint utiliza caché.                                                                             |
-| `POST`      | `/api/spacecrafts`               | Crear una nueva nave espacial.                                                                                                               |
-| `PUT`       | `/api/spacecrafts/{id}`          | Actualizar una nave espacial existente por su ID.                                                                                            |
-| `DELETE`    | `/api/spacecrafts/{id}`          | Eliminar una nave espacial por su ID.                                                                                                        |
-| `GET`       | `/api/spacecrafts/search`        | Obtener todas las naves espaciales que contengan en su nombre el texto proporcionado en el parámetro `name`, con paginación opcional.        |
-
-## Configuración de la Colección Postman
-
-Una colección Postman está disponible para probar cada uno de los endpoints con diferentes escenarios. Esta colección incluye casos de prueba para:
-
-- **Crear una nave espacial**
-- **Obtener todas las naves espaciales**
-- **Obtener todas las naves con paginación**
-- **Buscar naves por ID** (probando el cache)
-- **Buscar naves que contengan un nombre específico**
-- **Actualizar una nave**
-- **Eliminar una nave**
-
-### Importar la Colección Postman
-
-1. Descarga el archivo `spacecraft-collection.json` y guárdalo localmente.
-2. Abre Postman y selecciona "Importar".
-3. Carga el archivo `spacecraft-collection.json` para importar la colección en tu entorno de Postman.
-4. Asegúrate de que la aplicación esté ejecutándose en `http://localhost:8080` para probar correctamente la colección.
-
-## Ejecución
-
-1. Clona este repositorio en tu máquina local.
-2. Ejecuta la aplicación con `./mvnw spring-boot:run` (Linux/macOS) o `mvnw.cmd spring-boot:run` (Windows).
-3. Accede a `http://localhost:8080` en tu navegador o desde Postman para realizar pruebas con la API.
-
-## Licencia
-
-Este proyecto está bajo la Licencia MIT. Consulta el archivo `LICENSE` para obtener más detalles.
+## Repos relacionados
+Paneles: [spacecraftSystem-frontend](../spacecraftSystem-frontend),
+[spacecraft-tickets-frontend](../spacecraft-tickets-frontend). Taller:
+[spacecraft-taller-backend](../spacecraft-taller-backend),
+[spacecraft-taller-frontend](../spacecraft-taller-frontend). Landing:
+[spacecraft-events-landing](../spacecraft-events-landing).
