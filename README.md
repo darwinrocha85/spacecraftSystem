@@ -6,7 +6,7 @@ asientos), venta de entradas con cobro real vía BankIn, y el envío de una nave
 reparación.
 
 ## Stack
-- Spring Boot 3, Java 17, Maven
+- Spring Boot 3, Java 17, Maven (requiere JDK 17+)
 - H2 en memoria (se reinicia en cada arranque; datos de demo en `data.sql`)
 - Caché con Caffeine, manejo centralizado de excepciones
 
@@ -16,7 +16,7 @@ reparación.
 ```
 Levanta en `http://localhost:8080`. Consola H2: `http://localhost:8080/h2-console`.
 
-Para el flujo completo (compra con cobro real, taller) necesita además `Bankin` (puerto 8000)
+Para el flujo completo (compra con cobro real, taller) necesita además `BankIn` (puerto 8000)
 y `spacecraft-taller-backend` (puerto 8001) corriendo.
 
 ## Áreas principales
@@ -30,13 +30,15 @@ y `spacecraft-taller-backend` (puerto 8001) corriendo.
 | Email | Confirmación de compra/cancelación, best-effort (nunca bloquea la operación) |
 
 ## Variables de entorno
-Se configuran en un archivo `.env` local (no versionado): credenciales de BankIn, la clave
-interna compartida con el taller y, opcionalmente, credenciales SMTP para el email. Ningún
-valor real vive en este repo.
+Se configuran por variables de entorno del sistema o `application.properties` local (no
+versionado): credenciales de BankIn, la clave interna compartida con el taller y,
+opcionalmente, credenciales SMTP para el email. Ningún valor real vive en este repo.
 
 ## Repos relacionados
-Paneles: [spacecraftSystem-frontend](../spacecraftSystem-frontend),
-[spacecraft-tickets-frontend](../spacecraft-tickets-frontend). Taller:
-[spacecraft-taller-backend](../spacecraft-taller-backend),
-[spacecraft-taller-frontend](../spacecraft-taller-frontend). Landing:
-[spacecraft-events-landing](../spacecraft-events-landing).
+Paneles: [spacecraftSystem-frontend](https://github.com/darwinrocha85/spacecraftSystem-frontend),
+[spacecraft-tickets-frontend](https://github.com/darwinrocha85/spacecraft-tickets-frontend).
+Taller: [spacecraft-taller-backend](https://github.com/darwinrocha85/spacecraft-taller-backend),
+[spacecraft-taller-frontend](https://github.com/darwinrocha85/spacecraft-taller-frontend).
+Landing:
+[spacecraft-events-landing](https://github.com/darwinrocha85/spacecraft-events-landing).
+IA: [spacecraft-mcp](https://github.com/darwinrocha85/spacecraft-mcp).
